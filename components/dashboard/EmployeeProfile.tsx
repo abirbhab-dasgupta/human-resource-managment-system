@@ -1,0 +1,327 @@
+"use client";
+
+import { useEffect, useState } from "react";
+
+type Details = Record<string, string | null>;
+type Salary = {
+  monthlyWage: number;
+  workingDaysPerWeek: number;
+  breakTimeHours: number;
+  pfEmployeePct: number;
+  pfEmployerPct: number;
+  professionalTax: number;
+  breakdown: {
+    basic: number; hra: number; standardAllowance: number; performanceBonus: number;
+    leaveTravelAllowance: number; fixedAllowance: number; pfEmployee: number; pfEmployer: number;
+    professionalTax: number; netMonthly: number;
+  };
+};
+
+export default function EmployeeProfile({ userId }: { userId: string }) {
+  const [data, setData] = useState<{
+    employee: { id: string; name: string; email: string; image: string | null; role: string; employeeCode: string | null; phone: string | null; companyName: string | null };
+    details: Details | null;
+    salary: Salary | null;
+    canEdit: boolean;
+    canViewSalary: boolean;
+  } | null>(null);
+  const [tab, setTab] = useState<"resume" | "private" | "salary" | "security">("resume");
+  const [editing, setEditing] = useState(false);
+
+  function load() {
+    fetch(`/api/employees/${userId}`).then((r) => r.json()).then(setData);
+  }
+  useEffect(load, [userId]);
+
+  if (!data) return <p className="text-sm text-muted">Loading profile...</p>;
+  const { employee, details, salary, canEdit, canViewSalary } = data;
+
+  return (
+    <div className="surface-card">
+      <div className="flex flex-col gap-4 border-b border-border pb-5 sm:flex-row sm:items-center">
+        <div className="emp-avatar h-20 w-20 text-2xl">
+          {employee.image ? (
+            // eslint-disable-next-line @next/next/no-img-element
+            <img src={employee.image} alt={employee.name} className="h-full w-full object-cover" />
+          ) : (
+            employee.name.split(" ").map((w) => w[0]).join("").slice(0, 2).toUpperCase()
+          )}
+        </div>
+        <div className="flex-1">
+          <h1 className="font-sans text-xl font-semibold text-ink">{employee.name}</h1>
+          <p className="font-mono text-xs uppercase tracking-wider text-muted">{employee.employeeCode} · {employee.role}</p>
+          <p className="mt-1 text-sm text-muted">{employee.email}</p>
+        </div>
+        <div className="grid grid-cols-2 gap-x-6 gap-y-1 text-sm sm:text-right">
+          <span className="text-muted">Company</span><span className="text-ink">{employee.companyName}</span>
+          <span className="text-muted">Department</span><span className="text-ink">{details?.department ?? "—"}</span>
+          <span className="text-muted">Manager</span><span className="text-ink">{details?.manager ?? "—"}</span>
+          <span className="text-muted">Location</span><span className="text-ink">{details?.location ?? "—"}</span>
+        </div>
+      </div>
+
+      <div className="mt-4 flex gap-1 border-b border-border">
+        <button className={tab === "resume" ? "tab-btn-active" : "tab-btn"} onClick={() => setTab("resume")}>Resume</button>
+        <button className={tab === "private" ? "tab-btn-active" : "tab-btn"} onClick={() => setTab("private")}>Private Info</button>
+        {canViewSalary && (
+          <button className={tab === "salary" ? "tab-btn-active" : "tab-btn"} onClick={() => setTab("salary")}>Salary Info</button>
+        )}
+        <button className={tab === "security" ? "tab-btn-active" : "tab-btn"} onClick={() => setTab("security")}>Security</button>
+      </div>
+
+      <div className="pt-5">
+        {tab === "resume" && (
+          <ResumeTab details={details} canEdit={canEdit} userId={userId} editing={editing} setEditing={setEditing} onSaved={load} />
+        )}
+        {tab === "private" && (
+          <PrivateInfoTab details={details} canEdit={canEdit} userId={userId} editing={editing} setEditing={setEditing} onSaved={load} />
+        )}
+        {tab === "salary" && canViewSalary && (
+          <SalaryTab userId={userId} salary={salary} onSaved={load} />
+        )}
+        {tab === "security" && (
+          <div className="text-sm text-muted">Password &amp; session management coming soon.</div>
+        )}
+      </div>
+    </div>
+  );
+}
+
+function EditBar({ canEdit, editing, setEditing, onSave, saving }: { canEdit: boolean; editing: boolean; setEditing: (v: boolean) => void; onSave: () => void; saving: boolean }) {
+  if (!canEdit) return null;
+  return (
+    <div className="mb-3 flex justify-end gap-2">
+      {editing ? (
+        <>
+          <button onClick={() => setEditing(false)} className="btn-secondary">Cancel</button>
+          <button onClick={onSave} disabled={saving} className="btn-sm-primary">{saving ? "Saving..." : "Save"}</button>
+        </>
+      ) : (
+        <button onClick={() => setEditing(true)} className="btn-secondary">Edit</button>
+      )}
+    </div>
+  );
+}
+
+function ResumeTab({ details, canEdit, userId, editing, setEditing, onSaved }: { details: Details | null; canEdit: boolean; userId: string; editing: boolean; setEditing: (v: boolean) => void; onSaved: () => void }) {
+  const [about, setAbout] = useState(details?.about ?? "");
+  const [hobbies, setHobbies] = useState(details?.hobbies ?? "");
+  const [saving, setSaving] = useState(false);
+
+  useEffect(() => { setAbout(details?.about ?? ""); setHobbies(details?.hobbies ?? ""); }, [details]);
+
+  async function save() {
+    setSaving(true);
+    await fetch(`/api/employees/${userId}`, {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ details: { about, hobbies } }),
+    });
+    setSaving(false);
+    setEditing(false);
+    onSaved();
+  }
+
+  return (
+    <div>
+      <EditBar canEdit={canEdit} editing={editing} setEditing={setEditing} onSave={save} saving={saving} />
+      <div>
+        <label className="field-label">About</label>
+        {editing ? (
+          <textarea className="field-input min-h-24" value={about ?? ""} onChange={(e) => setAbout(e.target.value)} />
+        ) : (
+          <p className="field-value min-h-14 whitespace-pre-wrap">{about || "—"}</p>
+        )}
+      </div>
+      <div className="mt-4">
+        <label className="field-label">Interests &amp; Hobbies</label>
+        {editing ? (
+          <textarea className="field-input min-h-24" value={hobbies ?? ""} onChange={(e) => setHobbies(e.target.value)} />
+        ) : (
+          <p className="field-value min-h-14 whitespace-pre-wrap">{hobbies || "—"}</p>
+        )}
+      </div>
+    </div>
+  );
+}
+
+const PRIVATE_FIELDS: [string, string][] = [
+  ["dob", "Date of Birth"],
+  ["residingAddress", "Residing Address"],
+  ["nationality", "Nationality"],
+  ["personalEmail", "Personal Email"],
+  ["gender", "Gender"],
+  ["maritalStatus", "Marital Status"],
+];
+const BANK_FIELDS: [string, string][] = [
+  ["bankAccountNumber", "Account Number"],
+  ["bankName", "Bank Name"],
+  ["ifscCode", "IFSC Code"],
+  ["panNo", "PAN No"],
+  ["uanNo", "UAN No"],
+];
+
+function PrivateInfoTab({ details, canEdit, userId, editing, setEditing, onSaved }: { details: Details | null; canEdit: boolean; userId: string; editing: boolean; setEditing: (v: boolean) => void; onSaved: () => void }) {
+  const [form, setForm] = useState<Details>(details ?? {});
+  const [saving, setSaving] = useState(false);
+
+  useEffect(() => setForm(details ?? {}), [details]);
+
+  async function save() {
+    setSaving(true);
+    await fetch(`/api/employees/${userId}`, {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ details: form }),
+    });
+    setSaving(false);
+    setEditing(false);
+    onSaved();
+  }
+
+  return (
+    <div>
+      <EditBar canEdit={canEdit} editing={editing} setEditing={setEditing} onSave={save} saving={saving} />
+      <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+        <div>
+          {PRIVATE_FIELDS.map(([key, label]) => (
+            <div key={key} className="mb-3">
+              <label className="field-label">{label}</label>
+              {editing ? (
+                <input className="field-input" value={form[key] ?? ""} onChange={(e) => setForm({ ...form, [key]: e.target.value })} />
+              ) : (
+                <p className="field-value">{form[key] || "—"}</p>
+              )}
+            </div>
+          ))}
+        </div>
+        <div>
+          <p className="mb-2 font-mono text-[10px] uppercase tracking-wider text-muted">Bank Details</p>
+          {BANK_FIELDS.map(([key, label]) => (
+            <div key={key} className="mb-3">
+              <label className="field-label">{label}</label>
+              {editing ? (
+                <input className="field-input" value={form[key] ?? ""} onChange={(e) => setForm({ ...form, [key]: e.target.value })} />
+              ) : (
+                <p className="field-value">{form[key] || "—"}</p>
+              )}
+            </div>
+          ))}
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function SalaryTab({ userId, salary, onSaved }: { userId: string; salary: Salary | null; onSaved: () => void }) {
+  const [editing, setEditing] = useState(false);
+  const [wage, setWage] = useState(salary?.monthlyWage ?? 0);
+  const [workingDays, setWorkingDays] = useState(salary?.workingDaysPerWeek ?? 5);
+  const [breakTime, setBreakTime] = useState(salary?.breakTimeHours ?? 1);
+  const [pfEmp, setPfEmp] = useState(salary?.pfEmployeePct ?? 12);
+  const [pfEmployer, setPfEmployer] = useState(salary?.pfEmployerPct ?? 12);
+  const [tax, setTax] = useState(salary?.professionalTax ?? 200);
+  const [saving, setSaving] = useState(false);
+
+  useEffect(() => {
+    setWage(salary?.monthlyWage ?? 0);
+    setWorkingDays(salary?.workingDaysPerWeek ?? 5);
+    setBreakTime(salary?.breakTimeHours ?? 1);
+    setPfEmp(salary?.pfEmployeePct ?? 12);
+    setPfEmployer(salary?.pfEmployerPct ?? 12);
+    setTax(salary?.professionalTax ?? 200);
+  }, [salary]);
+
+  async function save() {
+    setSaving(true);
+    await fetch(`/api/salary/${userId}`, {
+      method: "PUT",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ monthlyWage: wage, workingDaysPerWeek: workingDays, breakTimeHours: breakTime, pfEmployeePct: pfEmp, pfEmployerPct: pfEmployer, professionalTax: tax }),
+    });
+    setSaving(false);
+    setEditing(false);
+    onSaved();
+  }
+
+  const b = salary?.breakdown;
+
+  return (
+    <div>
+      <EditBar canEdit editing={editing} setEditing={setEditing} onSave={save} saving={saving} />
+      <div className="grid grid-cols-1 gap-6 sm:grid-cols-2">
+        <div>
+          <div className="mb-3 flex items-center justify-between">
+            <label className="field-label mb-0">Month Wage</label>
+            {editing ? <input type="number" className="field-input w-40" value={wage} onChange={(e) => setWage(Number(e.target.value))} /> : <span className="font-mono text-ink">₹{wage.toLocaleString()} / month</span>}
+          </div>
+          <div className="mb-3 flex items-center justify-between">
+            <label className="field-label mb-0">Yearly Wage</label>
+            <span className="font-mono text-ink">₹{(wage * 12).toLocaleString()} / year</span>
+          </div>
+
+          <p className="mb-2 mt-4 font-mono text-[10px] uppercase tracking-wider text-muted">Salary Components</p>
+          {b && (
+            <div className="space-y-2 text-sm">
+              <Row label="Basic Salary" value={b.basic} note="50% of monthly wage" />
+              <Row label="House Rent Allowance" value={b.hra} note="50% of Basic" />
+              <Row label="Standard Allowance" value={b.standardAllowance} note="~8.33% of wage" />
+              <Row label="Performance Bonus" value={b.performanceBonus} note="8.33% of wage" />
+              <Row label="Leave Travel Allowance" value={b.leaveTravelAllowance} note="8.33% of wage" />
+              <Row label="Fixed Allowance" value={b.fixedAllowance} note="Remainder of wage" />
+            </div>
+          )}
+        </div>
+
+        <div>
+          <div className="mb-3 flex items-center justify-between">
+            <label className="field-label mb-0">No. of working days / week</label>
+            {editing ? <input type="number" className="field-input w-24" value={workingDays} onChange={(e) => setWorkingDays(Number(e.target.value))} /> : <span className="text-ink">{workingDays}</span>}
+          </div>
+          <div className="mb-4 flex items-center justify-between">
+            <label className="field-label mb-0">Break Time (hrs)</label>
+            {editing ? <input type="number" className="field-input w-24" value={breakTime} onChange={(e) => setBreakTime(Number(e.target.value))} /> : <span className="text-ink">{breakTime}</span>}
+          </div>
+
+          <p className="mb-2 font-mono text-[10px] uppercase tracking-wider text-muted">Provident Fund (PF) Contribution</p>
+          <div className="mb-2 flex items-center justify-between text-sm">
+            <span className="text-muted">Employee</span>
+            {editing ? <input type="number" className="field-input w-20" value={pfEmp} onChange={(e) => setPfEmp(Number(e.target.value))} /> : <span className="text-ink">{pfEmp}%</span>}
+            {b && <span className="font-mono text-ink">₹{b.pfEmployee}</span>}
+          </div>
+          <div className="mb-4 flex items-center justify-between text-sm">
+            <span className="text-muted">Employer</span>
+            {editing ? <input type="number" className="field-input w-20" value={pfEmployer} onChange={(e) => setPfEmployer(Number(e.target.value))} /> : <span className="text-ink">{pfEmployer}%</span>}
+            {b && <span className="font-mono text-ink">₹{b.pfEmployer}</span>}
+          </div>
+
+          <p className="mb-2 font-mono text-[10px] uppercase tracking-wider text-muted">Tax Deductions</p>
+          <div className="flex items-center justify-between text-sm">
+            <span className="text-muted">Professional Tax</span>
+            {editing ? <input type="number" className="field-input w-20" value={tax} onChange={(e) => setTax(Number(e.target.value))} /> : <span className="font-mono text-ink">₹{tax}/month</span>}
+          </div>
+
+          {b && (
+            <div className="mt-5 rounded-md border border-primary/30 bg-primary/5 p-3">
+              <div className="flex justify-between text-sm font-medium text-ink">
+                <span>Net Monthly Pay</span><span className="font-mono">₹{b.netMonthly.toLocaleString()}</span>
+              </div>
+            </div>
+          )}
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function Row({ label, value, note }: { label: string; value: number; note: string }) {
+  return (
+    <div className="flex items-center justify-between border-b border-border/60 pb-2">
+      <div>
+        <p className="text-ink">{label}</p>
+        <p className="text-xs text-muted">{note}</p>
+      </div>
+      <span className="font-mono text-ink">₹{value.toLocaleString()}</span>
+    </div>
+  );
+}
