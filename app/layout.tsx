@@ -14,7 +14,7 @@ const plexMono = IBM_Plex_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "HRFlow — HR Management System",
+  title: "WorkForce — HR Management System",
   description: "Every workday, perfectly aligned.",
 };
 

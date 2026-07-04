@@ -29,6 +29,11 @@ export const user = pgTable("user", {
   joinYear: integer("join_year"),
   mustResetPassword: boolean("must_reset_password").default(false).notNull(),
   phone: text("phone"),
+
+  // Required by better-auth's `admin` plugin
+  banned: boolean("banned").default(false),
+  banReason: text("ban_reason"),
+  banExpires: timestamp("ban_expires"),
 }, (table) => [index("user_company_idx").on(table.companyId)]);
 
 export const session = pgTable("session", {
