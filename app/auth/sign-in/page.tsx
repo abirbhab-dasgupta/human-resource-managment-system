@@ -3,6 +3,7 @@
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
+import Image from 'next/image';
 import { signIn, authClient } from '@/lib/auth-client';
 
 export default function SignInPage() {
@@ -45,15 +46,13 @@ export default function SignInPage() {
       <div className="auth-card">
         <div className="auth-brand">
           <div className="auth-brand-mark">
-            <svg viewBox="0 0 24 24" className="h-4.5 w-4.5 text-white" fill="none" stroke="currentColor" strokeWidth="2">
-              <path d="M3 21V8l9-5 9 5v13M9 21v-6h6v6" strokeLinecap="round" strokeLinejoin="round" />
-            </svg>
+            <Image src="/logo.svg" alt="WorkForce" width={36} height={36} />
           </div>
-          <span className="auth-brand-name">HRFlow</span>
+          <span className="auth-brand-name">WorkForce</span>
         </div>
 
         <div className="mb-6 sm:mb-7">
-          <h1 className="font-mono text-xl font-bold text-white sm:text-2xl">Sign In</h1>
+          <h1 className="font-sans text-xl font-semibold text-ink sm:text-2xl">Sign In</h1>
           <p className="mt-1.5 text-sm text-muted">Every workday, perfectly aligned.</p>
         </div>
 
@@ -88,7 +87,7 @@ export default function SignInPage() {
               type="button"
               onClick={() => setShowPassword((v) => !v)}
               aria-label={showPassword ? 'Hide password' : 'Show password'}
-              className="absolute right-3 top-[38px] text-muted hover:text-white"
+              className="absolute right-3 top-[38px] text-muted hover:text-ink"
             >
               <svg viewBox="0 0 24 24" className="h-4 w-4" fill="none" stroke="currentColor" strokeWidth="2">
                 <path d="M1 12s4-7 11-7 11 7 11 7-4 7-11 7-11-7-11-7z" />
