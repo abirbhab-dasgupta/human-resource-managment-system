@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
+import { Plane } from "lucide-react";
 
 type Employee = {
   id: string;
@@ -58,7 +59,13 @@ export default function EmployeeGrid({ base, isAdmin }: { base: "admin" | "emplo
         <div className="grid grid-cols-2 gap-4 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5">
           {filtered.map((emp) => (
             <div key={emp.id} className="emp-card" onClick={() => router.push(`/dashboard/${base}/employees/${emp.id}`)}>
-              <span className={`absolute right-3 top-3 status-dot status-dot-${emp.status}`} />
+              {emp.status === "leave" ? (
+                <span className="absolute right-3 top-3 flex h-4 w-4 items-center justify-center rounded-full bg-amber/15 text-[var(--color-amber)]">
+                  <Plane size={11} strokeWidth={2.5} />
+                </span>
+              ) : (
+                <span className={`absolute right-3 top-3 status-dot status-dot-${emp.status}`} />
+              )}
               <div className="emp-avatar">
                 {emp.image ? (
                   // eslint-disable-next-line @next/next/no-img-element

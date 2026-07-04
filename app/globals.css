@@ -103,7 +103,7 @@
   .status-dot { @apply inline-block h-2.5 w-2.5 shrink-0 rounded-full; }
   .status-dot-present { background: #2eb872; }
   .status-dot-leave { background: var(--color-amber); }
-  .status-dot-absent { background: var(--color-destructive); }
+  .status-dot-absent { background: #eab308; }
 
   .btn-secondary {
     @apply rounded-md border border-border bg-surface px-4 py-2 font-mono text-[12px] uppercase tracking-wider text-ink transition-colors hover:border-primary hover:text-primary disabled:cursor-not-allowed disabled:opacity-50;

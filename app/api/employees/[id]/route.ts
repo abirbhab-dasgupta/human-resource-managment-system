@@ -5,6 +5,7 @@ import { user, profileDetails, salaryInfo, company } from "@/lib/db/schema";
 import { eq } from "drizzle-orm";
 import { headers } from "next/headers";
 import { computeSalary } from "@/lib/salary";
+import { BANK_DETAIL_FIELDS } from "@/lib/profile-fields";
 
 export async function GET(_req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
@@ -23,6 +24,9 @@ export async function GET(_req: NextRequest, { params }: { params: Promise<{ id:
 
   const isAdmin = session.user.role === "admin" || session.user.role === "hr";
   const isSelf = session.user.id === id;
+  // Bank/financial fields are more sensitive than the rest of the profile:
+  // only a true admin (not hr) or the employee themself may view them.
+  const canViewBank = session.user.role === "admin" || isSelf;
 
   let salary = null;
   if (isAdmin) {
@@ -40,6 +44,14 @@ export async function GET(_req: NextRequest, { params }: { params: Promise<{ id:
     };
   }
 
+  let safeDetails = details ?? null;
+  if (safeDetails && !canViewBank) {
+    safeDetails = { ...safeDetails };
+    for (const field of BANK_DETAIL_FIELDS) {
+      delete (safeDetails as Record<string, unknown>)[field];
+    }
+  }
+
   return NextResponse.json({
     employee: {
       id: emp.id,
@@ -51,10 +63,13 @@ export async function GET(_req: NextRequest, { params }: { params: Promise<{ id:
       phone: emp.phone,
       companyName: compRow?.name ?? null,
     },
-    details: details ?? null,
+    details: safeDetails,
     salary,
     canEdit: isAdmin || isSelf,
     canViewSalary: isAdmin,
+    canViewBank,
+    isSelf,
+    viewerRole: session.user.role,
   });
 }
 
@@ -67,6 +82,8 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id
   const isSelf = session.user.id === id;
   if (!isAdmin && !isSelf) return NextResponse.json({ error: "Forbidden" }, { status: 403 });
 
+  const canViewBank = session.user.role === "admin" || isSelf;
+
   const body = await req.json();
   const { details, phone, image } = body;
 
@@ -78,11 +95,20 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id
   }
 
   if (details) {
+    // Never let someone write bank fields for another employee unless
+    // they're an admin (or it's their own profile).
+    const safeDetails = { ...details };
+    if (!canViewBank) {
+      for (const field of BANK_DETAIL_FIELDS) {
+        delete (safeDetails as Record<string, unknown>)[field];
+      }
+    }
+
     const [existing] = await db.select().from(profileDetails).where(eq(profileDetails.userId, id)).limit(1);
     if (existing) {
-      await db.update(profileDetails).set(details).where(eq(profileDetails.userId, id));
+      await db.update(profileDetails).set(safeDetails).where(eq(profileDetails.userId, id));
     } else {
-      await db.insert(profileDetails).values({ userId: id, ...details });
+      await db.insert(profileDetails).values({ userId: id, ...safeDetails });
     }
   }
 

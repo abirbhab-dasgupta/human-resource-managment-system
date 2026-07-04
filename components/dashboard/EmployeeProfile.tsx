@@ -1,6 +1,7 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, FormEvent } from "react";
+import { authClient } from "@/lib/auth-client";
 
 type Details = Record<string, string | null>;
 type Salary = {
@@ -24,6 +25,9 @@ export default function EmployeeProfile({ userId }: { userId: string }) {
     salary: Salary | null;
     canEdit: boolean;
     canViewSalary: boolean;
+    canViewBank: boolean;
+    isSelf: boolean;
+    viewerRole: string;
   } | null>(null);
   const [tab, setTab] = useState<"resume" | "private" | "salary" | "security">("resume");
   const [editing, setEditing] = useState(false);
@@ -34,7 +38,7 @@ export default function EmployeeProfile({ userId }: { userId: string }) {
   useEffect(load, [userId]);
 
   if (!data) return <p className="text-sm text-muted">Loading profile...</p>;
-  const { employee, details, salary, canEdit, canViewSalary } = data;
+  const { employee, details, salary, canEdit, canViewSalary, canViewBank, isSelf, viewerRole } = data;
 
   return (
     <div className="surface-card">
@@ -66,7 +70,9 @@ export default function EmployeeProfile({ userId }: { userId: string }) {
         {canViewSalary && (
           <button className={tab === "salary" ? "tab-btn-active" : "tab-btn"} onClick={() => setTab("salary")}>Salary Info</button>
         )}
-        <button className={tab === "security" ? "tab-btn-active" : "tab-btn"} onClick={() => setTab("security")}>Security</button>
+        {isSelf && (
+          <button className={tab === "security" ? "tab-btn-active" : "tab-btn"} onClick={() => setTab("security")}>Security</button>
+        )}
       </div>
 
       <div className="pt-5">
@@ -74,13 +80,13 @@ export default function EmployeeProfile({ userId }: { userId: string }) {
           <ResumeTab details={details} canEdit={canEdit} userId={userId} editing={editing} setEditing={setEditing} onSaved={load} />
         )}
         {tab === "private" && (
-          <PrivateInfoTab details={details} canEdit={canEdit} userId={userId} editing={editing} setEditing={setEditing} onSaved={load} />
+          <PrivateInfoTab details={details} canEdit={canEdit} canViewBank={canViewBank} userId={userId} editing={editing} setEditing={setEditing} onSaved={load} />
         )}
         {tab === "salary" && canViewSalary && (
           <SalaryTab userId={userId} salary={salary} onSaved={load} />
         )}
-        {tab === "security" && (
-          <div className="text-sm text-muted">Password &amp; session management coming soon.</div>
+        {tab === "security" && isSelf && (
+          <SecurityTab viewerRole={viewerRole} userId={userId} />
         )}
       </div>
     </div>
@@ -161,7 +167,7 @@ const BANK_FIELDS: [string, string][] = [
   ["uanNo", "UAN No"],
 ];
 
-function PrivateInfoTab({ details, canEdit, userId, editing, setEditing, onSaved }: { details: Details | null; canEdit: boolean; userId: string; editing: boolean; setEditing: (v: boolean) => void; onSaved: () => void }) {
+function PrivateInfoTab({ details, canEdit, canViewBank, userId, editing, setEditing, onSaved }: { details: Details | null; canEdit: boolean; canViewBank: boolean; userId: string; editing: boolean; setEditing: (v: boolean) => void; onSaved: () => void }) {
   const [form, setForm] = useState<Details>(details ?? {});
   const [saving, setSaving] = useState(false);
 
@@ -195,19 +201,26 @@ function PrivateInfoTab({ details, canEdit, userId, editing, setEditing, onSaved
             </div>
           ))}
         </div>
-        <div>
-          <p className="mb-2 font-mono text-[10px] uppercase tracking-wider text-muted">Bank Details</p>
-          {BANK_FIELDS.map(([key, label]) => (
-            <div key={key} className="mb-3">
-              <label className="field-label">{label}</label>
-              {editing ? (
-                <input className="field-input" value={form[key] ?? ""} onChange={(e) => setForm({ ...form, [key]: e.target.value })} />
-              ) : (
-                <p className="field-value">{form[key] || "—"}</p>
-              )}
-            </div>
-          ))}
-        </div>
+        {canViewBank ? (
+          <div>
+            <p className="mb-2 font-mono text-[10px] uppercase tracking-wider text-muted">Bank Details</p>
+            {BANK_FIELDS.map(([key, label]) => (
+              <div key={key} className="mb-3">
+                <label className="field-label">{label}</label>
+                {editing ? (
+                  <input className="field-input" value={form[key] ?? ""} onChange={(e) => setForm({ ...form, [key]: e.target.value })} />
+                ) : (
+                  <p className="field-value">{form[key] || "—"}</p>
+                )}
+              </div>
+            ))}
+          </div>
+        ) : (
+          <div>
+            <p className="mb-2 font-mono text-[10px] uppercase tracking-wider text-muted">Bank Details</p>
+            <p className="field-value text-muted">Only visible to admin.</p>
+          </div>
+        )}
       </div>
     </div>
   );
@@ -309,6 +322,147 @@ function SalaryTab({ userId, salary, onSaved }: { userId: string; salary: Salary
             </div>
           )}
         </div>
+      </div>
+    </div>
+  );
+}
+
+function SecurityTab({ viewerRole, userId }: { viewerRole: string; userId: string }) {
+  const isAdmin = viewerRole === "admin";
+
+  // Change password (available to every role)
+  const [currentPassword, setCurrentPassword] = useState("");
+  const [newPassword, setNewPassword] = useState("");
+  const [confirmPassword, setConfirmPassword] = useState("");
+  const [pwSaving, setPwSaving] = useState(false);
+  const [pwError, setPwError] = useState("");
+  const [pwSuccess, setPwSuccess] = useState("");
+
+  async function handleChangePassword(e: FormEvent) {
+    e.preventDefault();
+    setPwError("");
+    setPwSuccess("");
+    if (newPassword.length < 8) {
+      setPwError("New password must be at least 8 characters.");
+      return;
+    }
+    if (newPassword !== confirmPassword) {
+      setPwError("New password and confirmation do not match.");
+      return;
+    }
+    setPwSaving(true);
+    const { error } = await authClient.changePassword({
+      currentPassword,
+      newPassword,
+      revokeOtherSessions: true,
+    });
+    setPwSaving(false);
+    if (error) {
+      setPwError(error.message || "Failed to change password.");
+      return;
+    }
+    setPwSuccess("Password updated successfully.");
+    setCurrentPassword("");
+    setNewPassword("");
+    setConfirmPassword("");
+  }
+
+  // Change email (admin only)
+  const [newEmail, setNewEmail] = useState("");
+  const [emailSaving, setEmailSaving] = useState(false);
+  const [emailError, setEmailError] = useState("");
+  const [emailSuccess, setEmailSuccess] = useState("");
+
+  async function handleChangeEmail(e: FormEvent) {
+    e.preventDefault();
+    setEmailError("");
+    setEmailSuccess("");
+    const trimmed = newEmail.trim().toLowerCase();
+    if (!trimmed || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(trimmed)) {
+      setEmailError("Enter a valid email address.");
+      return;
+    }
+    setEmailSaving(true);
+    const { error } = await authClient.admin.updateUser({
+      userId,
+      data: { email: trimmed },
+    });
+    setEmailSaving(false);
+    if (error) {
+      setEmailError(error.message || "Failed to update email.");
+      return;
+    }
+    setEmailSuccess("Email updated successfully. You may need to sign in again.");
+    setNewEmail("");
+  }
+
+  return (
+    <div className="max-w-md space-y-8">
+      {isAdmin && (
+        <div>
+          <p className="mb-3 font-mono text-[10px] uppercase tracking-wider text-muted">Change Email</p>
+          <form onSubmit={handleChangeEmail} className="space-y-3">
+            <div>
+              <label className="field-label">New Email</label>
+              <input
+                type="email"
+                className="field-input"
+                value={newEmail}
+                onChange={(e) => setNewEmail(e.target.value)}
+                placeholder="new@company.com"
+                required
+              />
+            </div>
+            {emailError && <p className="text-sm text-red-500">{emailError}</p>}
+            {emailSuccess && <p className="text-sm text-emerald-600">{emailSuccess}</p>}
+            <button type="submit" disabled={emailSaving} className="btn-sm-primary">
+              {emailSaving ? "Updating..." : "Update Email"}
+            </button>
+          </form>
+        </div>
+      )}
+
+      <div>
+        <p className="mb-3 font-mono text-[10px] uppercase tracking-wider text-muted">Change Password</p>
+        <form onSubmit={handleChangePassword} className="space-y-3">
+          <div>
+            <label className="field-label">Current Password</label>
+            <input
+              type="password"
+              className="field-input"
+              value={currentPassword}
+              onChange={(e) => setCurrentPassword(e.target.value)}
+              required
+            />
+          </div>
+          <div>
+            <label className="field-label">New Password</label>
+            <input
+              type="password"
+              className="field-input"
+              value={newPassword}
+              onChange={(e) => setNewPassword(e.target.value)}
+              minLength={8}
+              required
+            />
+          </div>
+          <div>
+            <label className="field-label">Confirm New Password</label>
+            <input
+              type="password"
+              className="field-input"
+              value={confirmPassword}
+              onChange={(e) => setConfirmPassword(e.target.value)}
+              minLength={8}
+              required
+            />
+          </div>
+          {pwError && <p className="text-sm text-red-500">{pwError}</p>}
+          {pwSuccess && <p className="text-sm text-emerald-600">{pwSuccess}</p>}
+          <button type="submit" disabled={pwSaving} className="btn-sm-primary">
+            {pwSaving ? "Updating..." : "Update Password"}
+          </button>
+        </form>
       </div>
     </div>
   );
