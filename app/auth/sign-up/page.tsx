@@ -78,9 +78,9 @@ export default function SignUpPage() {
       <div className="auth-card sm:max-w-lg">
         <div className="auth-brand">
           <div className="auth-brand-mark">
-            <Image src="/logo.svg" alt="WorkForce" width={36} height={36} />
+            <Image src="/logo.svg" alt="WorkForcee" width={36} height={36} />
           </div>
-          <span className="auth-brand-name">WorkForce</span>
+          <span className="auth-brand-name">WorkForcee</span>
         </div>
 
         <div className="mb-6 sm:mb-7">

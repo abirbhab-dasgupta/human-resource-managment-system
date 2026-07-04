@@ -46,7 +46,7 @@ export default function SignInPage() {
       <div className="auth-card">
         <div className="auth-brand">
           <div className="auth-brand-mark">
-            <Image src="/logo.svg" alt="WorkForce" width={36} height={36} />
+            <Image src="/logo.svg" alt="WorkForcee" width={36} height={36} />
           </div>
           <span className="auth-brand-name">WorkForce</span>
         </div>

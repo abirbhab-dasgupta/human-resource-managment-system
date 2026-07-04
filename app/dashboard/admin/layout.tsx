@@ -19,11 +19,11 @@ export default async function AdminDashboardLayout({
           {company?.logoUrl ? (
             <img src={company.logoUrl} alt={`${company.name} logo`} className="h-full w-full object-cover" />
           ) : (
-            <Image src="/logo.svg" alt="WorkForce" width={28} height={28} />
+            <Image src="/logo.svg" alt="WorkForcee" width={28} height={28} />
           )}
         </div>
         <div>
-          <p className="font-sans text-sm font-semibold text-ink">{company?.name ?? "WorkForce"}</p>
+          <p className="font-sans text-sm font-semibold text-ink">{company?.name ?? "WorkForcee"}</p>
           <p className="font-mono text-[11px] uppercase tracking-wider text-muted">Admin</p>
         </div>
       </header>
