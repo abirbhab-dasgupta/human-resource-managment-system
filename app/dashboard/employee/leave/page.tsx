@@ -1,9 +1,5 @@
-import React from 'react'
+import LeaveView from "@/components/dashboard/LeaveView";
 
-const page = () => {
-  return (
-    <div>page</div>
-  )
+export default function Page() {
+  return <LeaveView isAdmin={false} />;
 }
-
-export default page

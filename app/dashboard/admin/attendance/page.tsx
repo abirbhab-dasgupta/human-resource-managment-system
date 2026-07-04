@@ -1,9 +1,5 @@
-import React from 'react'
+import AttendanceView from "@/components/dashboard/AttendanceView";
 
-const page = () => {
-  return (
-    <div>page</div>
-  )
+export default function Page() {
+  return <AttendanceView isAdmin />;
 }
-
-export default page

@@ -1,9 +1,5 @@
-import React from 'react'
+import EmployeeGrid from "@/components/dashboard/EmployeeGrid";
 
-const page = () => {
-  return (
-    <div>page</div>
-  )
+export default function Page() {
+  return <EmployeeGrid base="employee" isAdmin={false} />;
 }
-
-export default page

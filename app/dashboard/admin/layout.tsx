@@ -1,6 +1,6 @@
 import { redirect } from "next/navigation";
-import Image from "next/image";
 import { getSessionAndCompany } from "@/lib/get-session-company";
+import TopNav from "@/components/dashboard/TopNav";
 
 export default async function AdminDashboardLayout({
   children,
@@ -14,20 +14,14 @@ export default async function AdminDashboardLayout({
 
   return (
     <div className="min-h-screen bg-background">
-      <header className="flex items-center gap-3 border-b border-border bg-surface px-6 py-4">
-        <div className="flex h-9 w-9 shrink-0 items-center justify-center overflow-hidden rounded-[10px] border border-border bg-background">
-          {company?.logoUrl ? (
-            <img src={company.logoUrl} alt={`${company.name} logo`} className="h-full w-full object-cover" />
-          ) : (
-            <Image src="/logo.svg" alt="WorkForcee" width={28} height={28} />
-          )}
-        </div>
-        <div>
-          <p className="font-sans text-sm font-semibold text-ink">{company?.name ?? "WorkForcee"}</p>
-          <p className="font-mono text-[11px] uppercase tracking-wider text-muted">Admin</p>
-        </div>
-      </header>
-      <main className="px-6 py-6">{children}</main>
+      <TopNav
+        base="admin"
+        companyName={company?.name ?? "WorkForce"}
+        logoUrl={company?.logoUrl ?? null}
+        userName={session.user.name}
+        userImage={session.user.image ?? null}
+      />
+      <main className="px-4 py-6 sm:px-6">{children}</main>
     </div>
   );
 }

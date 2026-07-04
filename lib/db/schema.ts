@@ -81,9 +81,71 @@ export const verification = pgTable("verification", {
     .notNull(),
 }, (table) => [index("verification_identifier_idx").on(table.identifier)]);
 
+export const attendanceStatusEnum = pgEnum("attendance_status", ["present", "absent", "leave"]);
+export const leaveStatusEnum = pgEnum("leave_status", ["pending", "approved", "rejected"]);
+export const wageTypeEnum = pgEnum("wage_type", ["fixed"]);
+
+export const attendance = pgTable("attendance", {
+  id: text("id").primaryKey(),
+  userId: text("user_id").notNull().references(() => user.id, { onDelete: "cascade" }),
+  companyId: text("company_id").notNull().references(() => company.id, { onDelete: "cascade" }),
+  date: text("date").notNull(),
+  checkIn: timestamp("check_in"),
+  checkOut: timestamp("check_out"),
+  status: attendanceStatusEnum("status").notNull().default("present"),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+}, (table) => [index("attendance_user_date_idx").on(table.userId, table.date)]);
+
+export const leaveRequest = pgTable("leave_request", {
+  id: text("id").primaryKey(),
+  userId: text("user_id").notNull().references(() => user.id, { onDelete: "cascade" }),
+  companyId: text("company_id").notNull().references(() => company.id, { onDelete: "cascade" }),
+  type: text("type").notNull().default("Leave"),
+  startDate: text("start_date").notNull(),
+  endDate: text("end_date").notNull(),
+  reason: text("reason"),
+  status: leaveStatusEnum("status").notNull().default("pending"),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+}, (table) => [index("leave_user_idx").on(table.userId)]);
+
+export const profileDetails = pgTable("profile_details", {
+  userId: text("user_id").primaryKey().references(() => user.id, { onDelete: "cascade" }),
+  jobPosition: text("job_position"),
+  department: text("department"),
+  manager: text("manager"),
+  location: text("location"),
+  dob: text("dob"),
+  residingAddress: text("residing_address"),
+  nationality: text("nationality"),
+  personalEmail: text("personal_email"),
+  gender: text("gender"),
+  maritalStatus: text("marital_status"),
+  bankAccountNumber: text("bank_account_number"),
+  bankName: text("bank_name"),
+  ifscCode: text("ifsc_code"),
+  panNo: text("pan_no"),
+  uanNo: text("uan_no"),
+  about: text("about"),
+  hobbies: text("hobbies"),
+  skills: text("skills"),
+  certifications: text("certifications"),
+});
+
+export const salaryInfo = pgTable("salary_info", {
+  userId: text("user_id").primaryKey().references(() => user.id, { onDelete: "cascade" }),
+  wageType: wageTypeEnum("wage_type").notNull().default("fixed"),
+  monthlyWage: integer("monthly_wage").notNull().default(0),
+  workingDaysPerWeek: integer("working_days_per_week").notNull().default(5),
+  breakTimeHours: integer("break_time_hours").notNull().default(1),
+  pfEmployeePct: integer("pf_employee_pct").notNull().default(12),
+  pfEmployerPct: integer("pf_employer_pct").notNull().default(12),
+  professionalTax: integer("professional_tax").notNull().default(200),
+});
+
 export const companyRelations = relations(company, ({ many }) => ({
   employees: many(user),
 }));
+
 
 export const userRelations = relations(user, ({ one, many }) => ({
   company: one(company, { fields: [user.companyId], references: [company.id] }),
