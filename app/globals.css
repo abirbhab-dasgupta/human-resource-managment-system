@@ -1,26 +1,70 @@
-@import "tailwindcss";
+@import 'tailwindcss';
 
-:root {
-  --background: #ffffff;
-  --foreground: #171717;
+@theme {
+  --font-sans: var(--font-outfit);
+  --font-mono: var(--font-plex-mono);
+  --color-background: #000000;
+  --color-foreground: #ffffff;
+  --color-muted: #a1a1aa;
+  --color-border: rgba(255, 255, 255, 0.12);
+  --color-primary: #a855f7;
+  --color-primary-end: #7c3aed;
+  --color-destructive: #ef4444;
 }
 
-@theme inline {
-  --color-background: var(--background);
-  --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
-}
-
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
+@layer base {
+  body {
+    @apply bg-background text-foreground;
   }
 }
 
-body {
-  background: var(--background);
-  color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+@layer components {
+  .grid-background {
+    background-image:
+      linear-gradient(rgba(168, 85, 247, 0.06) 1px, transparent 1px),
+      linear-gradient(90deg, rgba(168, 85, 247, 0.06) 1px, transparent 1px);
+    background-size: 32px 32px;
+  }
+
+  .auth-card {
+    @apply w-full max-w-md sm:max-w-md rounded border border-border bg-black p-6 sm:p-8;
+  }
+
+  .auth-brand {
+    @apply flex items-center gap-2.5 mb-6 sm:mb-8;
+  }
+
+  .auth-brand-mark {
+    @apply flex h-8 w-8 shrink-0 items-center justify-center rounded-md;
+    background: linear-gradient(90deg, var(--color-primary), var(--color-primary-end));
+  }
+
+  .auth-brand-name {
+    @apply font-mono text-sm font-bold tracking-wide text-white;
+  }
+
+  .form-label {
+    @apply mb-2 block font-mono text-[11px] uppercase tracking-wider text-muted;
+  }
+
+  .form-input {
+    @apply w-full border border-border bg-transparent px-3.5 py-3 font-mono text-[13px] text-white placeholder:text-muted/50 outline-none transition-colors focus:border-primary;
+  }
+
+  .btn-primary {
+    @apply w-full rounded-sm py-3.5 font-mono text-[13px] font-medium uppercase tracking-wider text-white transition-opacity hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-50;
+    background: linear-gradient(90deg, var(--color-primary), var(--color-primary-end));
+  }
+
+  .form-error {
+    @apply border border-destructive/40 bg-destructive/10 p-3 text-sm text-destructive;
+  }
+
+  .auth-footer {
+    @apply mt-5 text-center text-sm text-muted;
+  }
+
+  .auth-footer a {
+    @apply text-primary hover:underline;
+  }
 }
