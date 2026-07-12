@@ -11,7 +11,8 @@ type Employee = {
   image: string | null;
   role: string;
   employeeCode: string | null;
-  status: "present" | "leave" | "absent";
+  status: "present" | "leave" | "absent" | "inactive";
+  active: boolean;
 };
 
 export default function EmployeeGrid({ base, isAdmin }: { base: "admin" | "employee"; isAdmin: boolean }) {
@@ -20,6 +21,7 @@ export default function EmployeeGrid({ base, isAdmin }: { base: "admin" | "emplo
   const [query, setQuery] = useState("");
   const [loading, setLoading] = useState(true);
   const [showNew, setShowNew] = useState(false);
+  const [showInactive, setShowInactive] = useState(false);
 
   function load() {
     setLoading(true);
@@ -31,9 +33,9 @@ export default function EmployeeGrid({ base, isAdmin }: { base: "admin" | "emplo
 
   useEffect(load, []);
 
-  const filtered = employees.filter((e) =>
-    (e.name + e.email + (e.employeeCode ?? "")).toLowerCase().includes(query.toLowerCase())
-  );
+  const filtered = employees
+    .filter((e) => showInactive || e.active)
+    .filter((e) => (e.name + e.email + (e.employeeCode ?? "")).toLowerCase().includes(query.toLowerCase()));
 
   return (
     <div>
@@ -43,12 +45,20 @@ export default function EmployeeGrid({ base, isAdmin }: { base: "admin" | "emplo
             + New
           </button>
         )}
-        <input
-          value={query}
-          onChange={(e) => setQuery(e.target.value)}
-          placeholder="Search employees..."
-          className="field-input sm:max-w-xs"
-        />
+        <div className="flex items-center gap-3">
+          {isAdmin && (
+            <label className="flex items-center gap-1.5 font-mono text-[10px] uppercase tracking-wider text-muted">
+              <input type="checkbox" checked={showInactive} onChange={(e) => setShowInactive(e.target.checked)} />
+              Show inactive
+            </label>
+          )}
+          <input
+            value={query}
+            onChange={(e) => setQuery(e.target.value)}
+            placeholder="Search employees..."
+            className="field-input sm:max-w-xs"
+          />
+        </div>
       </div>
 
       {loading ? (
@@ -58,8 +68,14 @@ export default function EmployeeGrid({ base, isAdmin }: { base: "admin" | "emplo
       ) : (
         <div className="grid grid-cols-2 gap-4 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5">
           {filtered.map((emp) => (
-            <div key={emp.id} className="emp-card" onClick={() => router.push(`/dashboard/${base}/employees/${emp.id}`)}>
-              {emp.status === "leave" ? (
+            <div
+              key={emp.id}
+              className={`emp-card ${!emp.active ? "opacity-50 grayscale" : ""}`}
+              onClick={() => router.push(`/dashboard/${base}/employees/${emp.id}`)}
+            >
+              {emp.status === "inactive" ? (
+                <span className="pill pill-rejected absolute right-2 top-2 text-[8px]">Inactive</span>
+              ) : emp.status === "leave" ? (
                 <span className="absolute right-3 top-3 flex h-4 w-4 items-center justify-center rounded-full bg-amber/15 text-[var(--color-amber)]">
                   <Plane size={11} strokeWidth={2.5} />
                 </span>

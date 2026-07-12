@@ -129,7 +129,19 @@ export const profileDetails = pgTable("profile_details", {
   hobbies: text("hobbies"),
   skills: text("skills"),
   certifications: text("certifications"),
+  leaveEntitlement: integer("leave_entitlement").notNull().default(18),
 });
+
+export const passwordResetStatusEnum = pgEnum("password_reset_status", ["pending", "resolved"]);
+
+export const passwordResetRequest = pgTable("password_reset_request", {
+  id: text("id").primaryKey(),
+  userId: text("user_id").notNull().references(() => user.id, { onDelete: "cascade" }),
+  companyId: text("company_id").notNull().references(() => company.id, { onDelete: "cascade" }),
+  status: passwordResetStatusEnum("status").notNull().default("pending"),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+  resolvedAt: timestamp("resolved_at"),
+}, (table) => [index("password_reset_user_idx").on(table.userId)]);
 
 export const salaryInfo = pgTable("salary_info", {
   userId: text("user_id").primaryKey().references(() => user.id, { onDelete: "cascade" }),

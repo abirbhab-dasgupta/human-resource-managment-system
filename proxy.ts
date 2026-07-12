@@ -7,7 +7,7 @@ export async function proxy(req: NextRequest) {
   const path = req.nextUrl.pathname;
 
   if (path === "/") {
-    if (!session) return NextResponse.redirect(new URL("/auth/sign-in", req.url));
+    if (!session) return NextResponse.next();
     const isAdmin = session.user.role === "admin" || session.user.role === "hr";
     return NextResponse.redirect(
       new URL(isAdmin ? "/dashboard/admin" : "/dashboard/employee", req.url)

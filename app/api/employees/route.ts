@@ -34,8 +34,9 @@ export async function GET() {
         .where(and(eq(leaveRequest.userId, emp.id), eq(leaveRequest.status, "approved")))
         .limit(1);
 
-      let status: "present" | "leave" | "absent" = "absent";
-      if (onLeave && onLeave.startDate <= today && onLeave.endDate >= today) status = "leave";
+      let status: "present" | "leave" | "absent" | "inactive" = "absent";
+      if (emp.banned) status = "inactive";
+      else if (onLeave && onLeave.startDate <= today && onLeave.endDate >= today) status = "leave";
       else if (att?.checkIn) status = "present";
 
       return {
@@ -46,6 +47,7 @@ export async function GET() {
         role: emp.role,
         employeeCode: emp.employeeCode,
         status,
+        active: !emp.banned,
         checkedIn: !!att?.checkIn && !att?.checkOut,
       };
     })

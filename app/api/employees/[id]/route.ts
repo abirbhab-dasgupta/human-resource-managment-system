@@ -62,12 +62,14 @@ export async function GET(_req: NextRequest, { params }: { params: Promise<{ id:
       employeeCode: emp.employeeCode,
       phone: emp.phone,
       companyName: compRow?.name ?? null,
+      active: !emp.banned,
     },
     details: safeDetails,
     salary,
     canEdit: isAdmin || isSelf,
     canViewSalary: isAdmin,
     canViewBank,
+    canManageStatus: isAdmin && !isSelf,
     isSelf,
     viewerRole: session.user.role,
   });
@@ -95,8 +97,6 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id
   }
 
   if (details) {
-    // Never let someone write bank fields for another employee unless
-    // they're an admin (or it's their own profile).
     const safeDetails = { ...details };
     if (!canViewBank) {
       for (const field of BANK_DETAIL_FIELDS) {
