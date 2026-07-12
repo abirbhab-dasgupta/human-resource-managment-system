@@ -26,7 +26,7 @@ export default function LandingPayrollSection() {
         </p>
       </div>
 
-      <AppChrome url="workforcee.app/dashboard/admin/payroll" className="mx-auto mt-10 max-w-md">
+      <AppChrome className="mx-auto mt-10 max-w-md">
         <div className="p-5">
           <p className="font-mono text-[10px] uppercase tracking-wider text-muted">
             Salary Breakdown — Aditi Sharma
