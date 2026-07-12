@@ -1,7 +1,9 @@
 "use client";
 
-import { useEffect, useState, FormEvent } from "react";
+import { useEffect, useRef, useState, FormEvent } from "react";
 import { authClient } from "@/lib/auth-client";
+
+const MAX_PHOTO_BYTES = 250 * 1024;
 
 type Details = Record<string, string | null>;
 type Salary = {
@@ -20,17 +22,22 @@ type Salary = {
 
 export default function EmployeeProfile({ userId }: { userId: string }) {
   const [data, setData] = useState<{
-    employee: { id: string; name: string; email: string; image: string | null; role: string; employeeCode: string | null; phone: string | null; companyName: string | null };
+    employee: { id: string; name: string; email: string; image: string | null; role: string; employeeCode: string | null; phone: string | null; companyName: string | null; active: boolean };
     details: Details | null;
     salary: Salary | null;
     canEdit: boolean;
     canViewSalary: boolean;
     canViewBank: boolean;
+    canManageStatus: boolean;
     isSelf: boolean;
     viewerRole: string;
   } | null>(null);
   const [tab, setTab] = useState<"resume" | "private" | "salary" | "security">("resume");
   const [editing, setEditing] = useState(false);
+  const [statusBusy, setStatusBusy] = useState(false);
+  const [photoBusy, setPhotoBusy] = useState(false);
+  const [photoError, setPhotoError] = useState("");
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   function load() {
     fetch(`/api/employees/${userId}`).then((r) => r.json()).then(setData);
@@ -38,23 +45,88 @@ export default function EmployeeProfile({ userId }: { userId: string }) {
   useEffect(load, [userId]);
 
   if (!data) return <p className="text-sm text-muted">Loading profile...</p>;
-  const { employee, details, salary, canEdit, canViewSalary, canViewBank, isSelf, viewerRole } = data;
+  const { employee, details, salary, canEdit, canViewSalary, canViewBank, canManageStatus, isSelf, viewerRole } = data;
+
+  async function toggleStatus() {
+    setStatusBusy(true);
+    await fetch(`/api/employees/${userId}/status`, {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ action: employee.active ? "deactivate" : "reactivate" }),
+    });
+    setStatusBusy(false);
+    load();
+  }
+
+  function onPhotoFile(e: React.ChangeEvent<HTMLInputElement>) {
+    const file = e.target.files?.[0];
+    e.target.value = "";
+    if (!file) return;
+    setPhotoError("");
+    if (file.size > MAX_PHOTO_BYTES) {
+      setPhotoError(`Image must be under ${Math.round(MAX_PHOTO_BYTES / 1024)}KB`);
+      return;
+    }
+    const reader = new FileReader();
+    reader.onload = async () => {
+      setPhotoBusy(true);
+      await fetch(`/api/employees/${userId}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ image: reader.result as string }),
+      });
+      setPhotoBusy(false);
+      load();
+    };
+    reader.readAsDataURL(file);
+  }
 
   return (
     <div className="surface-card">
       <div className="flex flex-col gap-4 border-b border-border pb-5 sm:flex-row sm:items-center">
-        <div className="emp-avatar h-20 w-20 text-2xl">
+        <div
+          className={`emp-avatar group relative h-20 w-20 shrink-0 text-2xl ${canEdit ? "cursor-pointer" : ""}`}
+          onClick={() => canEdit && fileInputRef.current?.click()}
+          title={canEdit ? "Update profile photo" : undefined}
+        >
           {employee.image ? (
             // eslint-disable-next-line @next/next/no-img-element
             <img src={employee.image} alt={employee.name} className="h-full w-full object-cover" />
           ) : (
             employee.name.split(" ").map((w) => w[0]).join("").slice(0, 2).toUpperCase()
           )}
+          {canEdit && (
+            <div className="absolute inset-0 flex items-center justify-center rounded-full bg-black/0 font-mono text-[9px] uppercase tracking-wider text-white opacity-0 transition-all group-hover:bg-black/50 group-hover:opacity-100">
+              {photoBusy ? "Saving..." : "Change"}
+            </div>
+          )}
+          {canEdit && (
+            <input
+              ref={fileInputRef}
+              type="file"
+              accept="image/*"
+              onChange={onPhotoFile}
+              className="hidden"
+            />
+          )}
         </div>
         <div className="flex-1">
-          <h1 className="font-sans text-xl font-semibold text-ink">{employee.name}</h1>
+          <div className="flex flex-wrap items-center gap-2">
+            <h1 className="font-sans text-xl font-semibold text-ink">{employee.name}</h1>
+            {!employee.active && <span className="pill pill-rejected">Inactive</span>}
+          </div>
           <p className="font-mono text-xs uppercase tracking-wider text-muted">{employee.employeeCode} · {employee.role}</p>
           <p className="mt-1 text-sm text-muted">{employee.email}</p>
+          {photoError && <p className="mt-1 text-xs text-destructive">{photoError}</p>}
+          {canManageStatus && (
+            <button
+              onClick={toggleStatus}
+              disabled={statusBusy}
+              className={employee.active ? "btn-secondary mt-2 text-destructive" : "btn-sm-primary mt-2"}
+            >
+              {statusBusy ? "Working..." : employee.active ? "Deactivate Employee" : "Reactivate Employee"}
+            </button>
+          )}
         </div>
         <div className="grid grid-cols-2 gap-x-6 gap-y-1 text-sm sm:text-right">
           <span className="text-muted">Company</span><span className="text-ink">{employee.companyName}</span>

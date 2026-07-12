@@ -139,4 +139,54 @@
   .pill-pending { @apply bg-amber/10 text-[var(--color-amber)]; }
   .pill-approved { @apply bg-primary/10 text-primary; }
   .pill-rejected { @apply bg-destructive/10 text-destructive; }
+
+  /* Landing page */
+  .landing-app-chrome {
+    @apply overflow-hidden rounded-xl border border-border bg-surface;
+    box-shadow: 0 1px 2px rgba(22, 32, 43, 0.04), 0 20px 40px rgba(22, 32, 43, 0.07);
+  }
+
+  .landing-chrome-bar {
+    @apply flex items-center gap-1.5 border-b border-border bg-[#fbfbfc] px-3.5 py-2.5;
+  }
+
+  .landing-chrome-dot { @apply h-2.5 w-2.5 shrink-0 rounded-full; }
+
+  .landing-chrome-url { @apply ml-2 font-mono text-[11px] text-muted; }
+
+  .landing-module-card {
+    @apply w-[190px] rounded-xl border border-border bg-surface p-3.5 text-left transition-all hover:-translate-y-0.5;
+    box-shadow: 0 1px 2px rgba(22, 32, 43, 0.04), 0 10px 24px rgba(22, 32, 43, 0.05);
+  }
+  .landing-module-card:hover {
+    box-shadow: 0 1px 2px rgba(22, 32, 43, 0.05), 0 16px 30px rgba(22, 32, 43, 0.08);
+  }
+
+  .landing-btn-lg-primary {
+    @apply inline-flex items-center justify-center gap-2 rounded-md px-6 py-3.5 font-mono text-[12px] font-medium uppercase tracking-wider text-white transition-colors hover:bg-[var(--color-primary-end)];
+    background: var(--color-primary);
+  }
+
+  .landing-btn-lg-ghost {
+    @apply inline-flex items-center justify-center gap-2 rounded-md border border-border px-6 py-3.5 font-mono text-[12px] font-medium uppercase tracking-wider text-ink transition-colors hover:border-primary hover:text-primary;
+  }
+
+  .landing-btn-lg-on-primary {
+    @apply inline-flex items-center justify-center gap-2 rounded-md bg-white px-6 py-3.5 font-mono text-[12px] font-semibold uppercase tracking-wider transition-opacity hover:opacity-90;
+    color: var(--color-primary-end);
+  }
+
+  .landing-btn-lg-ghost-on-primary {
+    @apply inline-flex items-center justify-center gap-2 rounded-md border border-white/35 px-6 py-3.5 font-mono text-[12px] font-medium uppercase tracking-wider text-white transition-colors hover:border-white/60;
+  }
+
+  .landing-cta-band {
+    background: linear-gradient(135deg, var(--color-primary) 0%, var(--color-primary-end) 100%);
+  }
+
+  .landing-mini-btn {
+    @apply rounded-md border border-border bg-surface px-2.5 py-1.5 font-mono text-[9.5px] uppercase tracking-wider transition-colors;
+  }
+  .landing-mini-btn-approve { @apply border-primary text-primary hover:bg-primary/5; }
+  .landing-mini-btn-reject { @apply border-destructive text-destructive hover:bg-destructive/5; }
 }

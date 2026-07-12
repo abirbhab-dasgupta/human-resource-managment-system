@@ -2,16 +2,34 @@
 
 import { useEffect, useState } from "react";
 
-type LeaveReq = { id: string; userId: string; type: string; startDate: string; endDate: string; reason: string | null; status: string; name?: string };
+type LeaveReq = {
+  id: string;
+  userId: string;
+  type: string;
+  startDate: string;
+  endDate: string;
+  reason: string | null;
+  status: string;
+  name?: string;
+  balance?: { entitlement: number; used: number; remaining: number };
+};
+type Balance = { entitlement: number; used: number; remaining: number };
 
 export default function LeaveView({ isAdmin }: { isAdmin: boolean }) {
   const [requests, setRequests] = useState<LeaveReq[]>([]);
+  const [balance, setBalance] = useState<Balance | null>(null);
   const [showForm, setShowForm] = useState(false);
   const [loading, setLoading] = useState(true);
 
   function load() {
     setLoading(true);
-    fetch("/api/leave").then((r) => r.json()).then((d) => setRequests(d.requests ?? [])).finally(() => setLoading(false));
+    fetch("/api/leave")
+      .then((r) => r.json())
+      .then((d) => {
+        setRequests(d.requests ?? []);
+        setBalance(d.balance ?? null);
+      })
+      .finally(() => setLoading(false));
   }
   useEffect(load, []);
 
@@ -26,7 +44,7 @@ export default function LeaveView({ isAdmin }: { isAdmin: boolean }) {
 
   return (
     <div className="surface-card">
-      <div className="mb-4 flex items-center justify-between">
+      <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
         <h1 className="font-sans text-lg font-semibold text-ink">Time Off {isAdmin ? "— Requests" : ""}</h1>
         {!isAdmin && (
           <button onClick={() => setShowForm(true)} className="btn-sm-primary">
@@ -34,6 +52,23 @@ export default function LeaveView({ isAdmin }: { isAdmin: boolean }) {
           </button>
         )}
       </div>
+
+      {!isAdmin && balance && (
+        <div className="mb-5 flex flex-wrap gap-6 rounded-md border border-border bg-background p-4">
+          <div>
+            <p className="field-label mb-0.5">Entitlement</p>
+            <p className="font-mono text-sm text-ink">{balance.entitlement} days / year</p>
+          </div>
+          <div>
+            <p className="field-label mb-0.5">Used this year</p>
+            <p className="font-mono text-sm text-ink">{balance.used} days</p>
+          </div>
+          <div>
+            <p className="field-label mb-0.5">Remaining</p>
+            <p className="font-mono text-sm text-primary">{balance.remaining} days</p>
+          </div>
+        </div>
+      )}
 
       {loading ? (
         <p className="text-sm text-muted">Loading...</p>
@@ -49,6 +84,7 @@ export default function LeaveView({ isAdmin }: { isAdmin: boolean }) {
                 <th>From</th>
                 <th>To</th>
                 <th>Reason</th>
+                {isAdmin && <th>Balance</th>}
                 <th>Status</th>
                 {isAdmin && <th>Actions</th>}
               </tr>
@@ -61,6 +97,11 @@ export default function LeaveView({ isAdmin }: { isAdmin: boolean }) {
                   <td>{r.startDate}</td>
                   <td>{r.endDate}</td>
                   <td>{r.reason || "—"}</td>
+                  {isAdmin && (
+                    <td className="font-mono text-xs">
+                      {r.balance ? `${r.balance.remaining} / ${r.balance.entitlement} left` : "—"}
+                    </td>
+                  )}
                   <td>
                     <span className={`pill ${r.status === "approved" ? "pill-approved" : r.status === "rejected" ? "pill-rejected" : "pill-pending"}`}>
                       {r.status}

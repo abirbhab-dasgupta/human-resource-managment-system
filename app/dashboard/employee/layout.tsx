@@ -8,6 +8,9 @@ export default async function EmployeeDashboardLayout({
   const { session, company } = await getSessionAndCompany();
 
   if (!session) redirect("/auth/sign-in");
+  if (session.user.mustResetPassword) {
+    redirect("/auth/reset-password");
+  }
 
   return (
     <div className="min-h-screen bg-background">

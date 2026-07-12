@@ -11,6 +11,9 @@ export default async function AdminDashboardLayout({
   if (session.user.role !== "admin" && session.user.role !== "hr") {
     redirect("/dashboard/employee");
   }
+  if (session.user.mustResetPassword) {
+    redirect("/auth/reset-password");
+  }
 
   return (
     <div className="min-h-screen bg-background">
