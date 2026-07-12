@@ -16,7 +16,7 @@ export default function LandingLeaveSection() {
         </p>
       </div>
 
-      <AppChrome url="workforcee.app/dashboard/admin/leave" className="mx-auto mt-10 max-w-2xl">
+      <AppChrome className="mx-auto mt-10 max-w-2xl">
         <div className="p-4">
           <p className="mb-2.5 font-mono text-[10px] uppercase tracking-wider text-muted">
             Time Off — Requests

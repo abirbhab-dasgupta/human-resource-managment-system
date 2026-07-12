@@ -41,7 +41,7 @@ export default function LandingAttendanceSection() {
         </p>
       </div>
 
-      <AppChrome url="workforcee.app/dashboard/admin/attendance" className="mx-auto mt-10 max-w-4xl">
+      <AppChrome className="mx-auto mt-10 max-w-4xl">
         <div className="grid sm:grid-cols-[1fr_1.3fr]">
           <div className="p-4 sm:border-r sm:border-border">
             <p className="mb-2.5 font-mono text-[10px] uppercase tracking-wider text-muted">Team</p>

@@ -41,7 +41,7 @@ export default function LandingHero() {
           </div>
         </div>
 
-        <AppChrome url="workforcee.app/dashboard/admin">
+        <AppChrome>
           <div className="p-4">
             <div className="mb-3 flex items-center justify-between">
               <span className="font-mono text-[10px] uppercase tracking-wider text-muted">
